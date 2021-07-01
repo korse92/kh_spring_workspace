@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="demo">
+	<insert id="insertDev">
+		insert into
+			dev
+		values(
+			seq_dev_no.nextval,
+			#{name},
+			#{career},
+			#{email},
+			#{gender},
+			#{lang}
+		)
+	</insert>
+	
+	<select id="selectDevList" resultType="dev">
+		select
+			*
+		from
+			dev
+		order by
+			no desc
+	</select>
+	
+	<select id="selectDevOne" resultMap="devMap">
+		select
+			*
+		from
+			dev
+		where
+			no = #{no}
+	</select>
+	<resultMap type="dev" id="devMap">
+		<!-- <id/> -->
+		<!-- mybatis-config에 핸들러 타입을 지정해둘수도 있지만 resultMap에서 설정도 가능하다. -->
+		<result column="lang" property="lang" typeHandler="com.kh.spring.common.typehandler.StringArrayTypeHandler"/>
+	</resultMap>
+	
+	<update id="updateDev">
+		update
+			dev
+		set
+			name = #{name},
+			career = #{career},
+			email = #{email},
+			gender = #{gender},
+			lang = #{lang}
+		where
+			no = #{no}
+	</update>
+	
+	<delete id="deleteDev">
+		delete from
+			dev
+		where
+			no = #{no}
+	</delete>
+</mapper>

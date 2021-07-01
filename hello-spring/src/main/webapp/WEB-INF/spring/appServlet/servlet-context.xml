@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- xmlns : xml namespace -->
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+
+	<!-- 이 스프링 설정파일의 기본 namespace는 mvc이다. mvc태그를 제외하고, 다른 namespace는 접두어를 사용해야 한다. -->
+	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+	
+	<!-- @Controller, @Service, @Repository등의 mvc관련 어노테이션 처리 -->
+	<!-- 5.x 이후 MessageConverter빈 관리 -->
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+
+	<!-- 정적파일(js,css,image 등) 설정 : /resources로 시작하는 요청은 /resource폴더 이하에서 조회. servlet이 처리하지 않음 -->
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	<resources mapping="/resources/**" location="/resources/" />
+	<!-- ** : 하위의(ex. /a, /a/b/c) 모든 요청에 대하여 처리 가능 -->
+	
+	<!-- ViewResolver빈 : jsp경로를 작성 -->
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+	
+	<!-- #14.1 jsonView Bean 및 viewResolver 등록 -->
+	<!-- 요청한 viewName과 실제bean이름을 매핑해주는 BeanNameViewResolver를 사용함. -->
+    <!-- bean아이디는 viewResolver로 반드시 지정. 처리순서를 1로 우선처리되도록함. -->
+    <beans:bean
+    	id="viewResolver"
+    	class="org.springframework.web.servlet.view.BeanNameViewResolver">
+        <beans:property name="order" value="1"/>
+    </beans:bean>
+    <!-- Model의 속성을 Json으로 변환해주는 빈 -->
+	<beans:bean
+		id="jsonView"
+		class="net.sf.json.spring.web.servlet.view.JsonView">
+		<beans:property name="contentType" value="application/json;charset=UTF-8" />
+	</beans:bean>
+	
+	<!-- base package이하의 어노테이션 : @Componet, @Autowired 등 빈을 등록/연결 처리 -->
+	<context:component-scan base-package="com.kh.spring" />
+	
+	<!-- #9.1 handler interceptor 등록 -->
+	<!-- 컨트롤러 핸들러 호출 전, 후에서 작동 (필터는 서블릿 호출 전, 후에서 작동) -->
+	<interceptors>
+		<interceptor>
+			<!-- contextPath 이하 모든 url -->
+			<mapping path="/**"/>
+			<beans:bean id="loggerinterceptor" class="com.kh.spring.common.interceptor.LoggerInterceptor"/>
+		</interceptor>
+		<interceptor>
+			<!-- mapping 태그는 여러개 사용가능하다 -->
+			<mapping path="/member/**/*.do"/>
+			<mapping path="/board/**/*.do"/>
+			<exclude-mapping path="/member/login.do"/>
+			<exclude-mapping path="/member/memberEnroll.do"/>
+			<exclude-mapping path="/member/checkIdDuplicate*.do"/>
+			<exclude-mapping path="/board/boardList.do"/>
+			<exclude-mapping path="/board/boardDetail.do"/>
+			<exclude-mapping path="/board/fileDownload.do"/>
+			<exclude-mapping path="/board/searchTitle.do"/>
+			<beans:bean id="loginInterceptor" class="com.kh.spring.common.interceptor.LoginInterceptor"/>
+		</interceptor>
+	</interceptors>
+	
+	<!-- #11.1 선언적 aop 작성 -->
+	<!-- <beans:bean id="loggerAspect" class="com.kh.spring.common.aop.LoggerAspect"/> -->
+	
+	<!-- 좌측하단 Namespaces에서 aop를 추가해주어야 사용가능 -->
+	<!-- 
+				execution(*[1] com.kh.spring.memo..*[2](..))
+				[1] : return 타입
+				[2] : 메소드명
+	-->
+	<!-- <aop:config>
+		<aop:aspect id="loggerAspect" ref="loggerAspect">
+			<aop:before method="beforeAdvice" pointcut-ref="loggerPointcut"/>
+			<aop:around method="aroundAdvice" pointcut-ref="loggerPointcut"/>
+			
+			<aop:pointcut expression="execution(* com.kh.spring.memo..*(..))" id="loggerPointcut"/>
+		</aop:aspect>
+	</aop:config> -->
+	
+	<!-- #11.1 annotation aop 작성 -->
+	<!-- 
+		1. aop관련 annotation 처리
+		2. application-context의 aop관련 설정을 servlet-context 적용
+			- @Transactional 또는 선언적방식 모두 필수
+	-->
+	<aop:aspectj-autoproxy/>
+	
+    <!-- #12.1 파일업로드를 처리할 Resolver클래스 빈등록(빈이름 주의) -->
+	<beans:bean
+		id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">   
+		<beans:property name="maxUploadSize" value="52428800" /> <!-- multipart/form-data 요청당 최대 파일 크기는 50MB(50 * 1024 * 1024)이다. default: -1(제한없음)-->
+		<beans:property name="maxUploadSizePerFile" value="10485760" /> <!-- 파일하나당 최대용량은 10MB(10 * 1024 * 1024)이다. 기본값: -1(제한없음) -->
+		<beans:property name="maxInMemorySize" value="10240" /> <!-- 메모리 사용최대용량. 기본값 10240. 이값을 넘어가면, 임시파일로 저장함. -->
+	</beans:bean>
+	
+    <!-- #15.1 @Responsebody사용을 위한 의존 : 빈등록 (스프링 5.x => MappingJackson2HttpMessageConverter) -->
+	<beans:bean id="jacksonMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" />
+	
+	<!--
+		스프링 5.x 버전이후부터는 필요없는 빈등록
+		jacksonMessageConverter빈을 RequestMappingHandlerAdapter빈에 등록하는 설정이며,
+		현재는 jacksonMessageConverter빈만 등록해도 자동으로 등록해준다.
+	-->
+	<!-- <beans:bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+		<beans:property name="messageConverters">
+			<beans:list>
+				<beans:ref bean="jacksonMessageConverter"/>
+                <beans:bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter" />
+			</beans:list>
+		</beans:property>
+	</beans:bean> -->
+	
+</beans:beans>

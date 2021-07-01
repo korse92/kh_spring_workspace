@@ -1,0 +1,38 @@
+######################
+## application.yml  ## 
+######################
+
+#port
+server:
+  port: 10000
+  servlet:
+    context-path: /sec
+    
+#datasource, view-jsp
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:xe
+    username: spring
+    password: spring
+    driver-class-name: oracle.jdbc.OracleDriver
+  mvc:
+    view:
+      prefix: /WEB-INF/views/
+      suffix: .jsp
+
+#logging
+logging:
+  level:
+    '[com.kh.spring]': debug
+  
+#mybatis
+mybatis:
+  mapper-locations:
+  - classpath*:/mapper/**/*.xml
+  type-aliases-package: com.kh.spring org.springframework.security.core.authority
+  type-handlers-package: com.kh.spring.common.typehandler
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: NULL
+
+
